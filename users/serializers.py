@@ -6,16 +6,34 @@ class UserSerializer(ModelSerializer):
     """
     User Serializer
     """
+    # designation = serializers.PrimaryKeyRelatedField(
+    #     queryset=Designation.objects.all(),
+    #     required=False,
+    #     allow_null=True
+    # )
     class Meta:
         model = CustomUser
         fields = (
             'id', 'email', 'first_name',  'last_name', 'is_staff', 'is_active', 
             'is_superuser','role','designation'
         )
-        depth=1
+        # depth=1
         extra_kwargs = {'password': {'write_only': True}, 
                         'last_login': {'read_only': True}, 'is_superuser': {'read_only': True}}
         
+    def to_representation(self, instance):
+        """
+        Customize the output (read) — show full designation details.
+        """
+        rep = super().to_representation(instance)
+        if instance.designation:
+            rep['designation'] = {
+                'id': instance.designation.id,
+                'name': instance.designation.name
+            }
+        else:
+            rep['designation'] = None
+        return rep
 
 class DesignationSerializer(ModelSerializer):
     class Meta:
