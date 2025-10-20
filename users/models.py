@@ -32,7 +32,7 @@ class CustomUser(AbstractUser):
     image = models.ImageField(upload_to='user_profile/', null=True,blank=True)
     address = models.CharField(max_length=500,null=True,blank=True)
     salary = models.CharField(max_length=500,null=True,blank=True)
-    designation = models.ForeignKey(Designation,on_delete=models.CASCADE)
+    designation = models.ForeignKey(Designation,on_delete=models.SET_NULL,null=True,blank=True)
     state = models.CharField(max_length=100,null=True,blank=True)
     zipcode = models.CharField(max_length=8,null=True,blank=True)
     country = models.CharField(max_length=255,null=True,blank=True)
