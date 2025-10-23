@@ -30,7 +30,7 @@ def now_local(only_date=False):
         return timezone.localtime(timezone.now())
     
 class userSignupView(ModelViewSet):
-    
+    permission_classes = [IsAuthenticated]
     queryset = get_user_model().objects.all()
     permission_classes = ('')
     serializer_class = UserSerializer
@@ -64,7 +64,7 @@ class userSignupView(ModelViewSet):
 
    
 
-    @action(methods=['POST'], detail=False)
+    @action(methods=['POST'], detail=False,permission_classes=[IsAuthenticated],authentication_classes = [TokenAuthentication])
     def logout(self, request):
         Token.objects.filter(user=request.user).delete()
         logout(request)
