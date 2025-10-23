@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-y9wh0r0le3=5o0s=aukx_!i@u$z945d^sfx*$j!zfm3&-du#4l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -56,7 +56,11 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 CORS_ALLOW_ALL_ORIGINS = True
-
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "*"
+#     # other origins
+# ]
 ROOT_URLCONF = 'erp.urls'
 
 TEMPLATES = [
