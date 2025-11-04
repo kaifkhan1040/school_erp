@@ -69,6 +69,23 @@ class userSignupView(ModelViewSet):
         Token.objects.filter(user=request.user).delete()
         logout(request)
         return response.Ok({"detail": "Successfully logged out."})
+    
+    @action(methods=['Get'], detail=False,permission_classes=[IsAuthenticated],authentication_classes = [TokenAuthentication])
+    def get_team(self, request):
+        manager = CustomUser.objects.get(id=request.user.id)
+        subordinates = manager.subordinates.all()
+        team= [
+            {
+                "id": u.id,
+                "email": u.email,
+                "first_name": u.first_name,
+                "last_name": u.last_name,
+                "role": u.role,
+                "designation": u.designation.name if u.designation else None
+            }
+            for u in subordinates
+        ]
+        print('team:',team)
 
     @action(methods=['POST'], detail=True)
     def passwordchange(self, request,pk=None):
@@ -101,7 +118,11 @@ class userSignupView(ModelViewSet):
         designation = request.data.get('designation')
         role = request.data.get('role')
         password = request.data.get('password')
+        reporting_to = request.data.get('reporting_manager')
         des_obj=Designation.objects.filter(id=designation).first()
+        reporting_to=CustomUser.objects.filter(id=reporting_to).first() 
+        if not reporting_to:
+            return Response({'error': 'Please enter valid reporting manager'}, status=401)
         if not des_obj:
             return Response({'error': 'Please enter valid desiganation'}, status=401)
         
@@ -113,7 +134,8 @@ class userSignupView(ModelViewSet):
             last_name=lastname,
             designation=des_obj,
             role=role,
-            password=password
+            password=password,
+            reporting_manager=reporting_to
         )
             return Response({'message':'user created successfully'},status=201)
         return Response({'error': 'User with this email already exists'}, status=401)

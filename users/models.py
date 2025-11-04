@@ -39,6 +39,16 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=500,null=True,blank=True)
     dob = models.DateField(null=True,blank=True)
     doj = models.DateField(null=True,blank=True)
+    reporting_manager = models.ForeignKey(
+        'self',                      # refers to same model
+        on_delete=models.SET_NULL,   # keep user if manager deleted
+        null=True,
+        blank=True,
+        related_name='subordinates'  # allows reverse lookup (manager.subordinates.all())
+    )
+
+    def __str__(self):
+        return self.email
 
     def __str__(self):
         return self.email

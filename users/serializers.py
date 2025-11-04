@@ -2,6 +2,21 @@ from .models import CustomUser,Designation
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
+
+class RecursiveUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'designation', 'subordinates')
+
+    subordinates = serializers.SerializerMethodField()
+
+    def get_subordinates(self, obj):
+        # Recursive call
+        subordinates = obj.subordinates.all()
+        if not subordinates:
+            return []
+        return RecursiveUserSerializer(subordinates, many=True).data 
+    
 class UserSerializer(ModelSerializer):
     """
     User Serializer
@@ -11,15 +26,30 @@ class UserSerializer(ModelSerializer):
     #     required=False,
     #     allow_null=True
     # )
+    designation = serializers.PrimaryKeyRelatedField(
+        queryset=Designation.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
+    reporting_manager = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    team = serializers.SerializerMethodField()
     class Meta:
         model = CustomUser
         fields = (
             'id', 'email', 'first_name',  'last_name', 'is_staff', 'is_active', 
-            'is_superuser','role','designation'
+            'is_superuser','role','designation','reporting_manager', 'team'
         )
         # depth=1
         extra_kwargs = {'password': {'write_only': True}, 
                         'last_login': {'read_only': True}, 'is_superuser': {'read_only': True}}
+    def get_team(self, obj):
+        """Fetch full recursive team tree."""
+        return RecursiveUserSerializer(obj.subordinates.all(), many=True).data
         
     def to_representation(self, instance):
         """
@@ -33,6 +63,13 @@ class UserSerializer(ModelSerializer):
             }
         else:
             rep['designation'] = None
+        if instance.reporting_manager:
+            rep['reporting_manager'] = {
+                'id': instance.reporting_manager.id,
+                'email': instance.reporting_manager.email
+            }
+        else:
+            rep['reporting_manager'] = None
         return rep
 
 class DesignationSerializer(ModelSerializer):
@@ -49,3 +86,6 @@ class PasswordChangeSerializer(serializers.Serializer):
                         'null': 'Please enter a valid password.',
                         'min_length': 'Password should have minimum 6 characters.'}
     )
+
+
+
