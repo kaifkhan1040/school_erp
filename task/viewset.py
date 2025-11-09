@@ -50,6 +50,8 @@ class TaskViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(assigned_to=self.request.user.id)
             else:
                 pass
+            if created_by:
+                queryset = queryset.filter(created_by_id=created_by)
         
 
         return queryset
