@@ -17,6 +17,8 @@ from .service import auth_password_change
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from .email import send_user_welcome_email
+
 def now_local(only_date=False):
     """
     In this method takes only date is true or false. If true means return the date with time (2016-03-15 13:09:08).
@@ -128,7 +130,7 @@ class userSignupView(ModelViewSet):
         
         checkuser = CustomUser.objects.filter(email=email,is_active=True).first()
         if not checkuser:
-            CustomUser.objects.create_user(
+            u_user=CustomUser.objects.create_user(
             email=email,
             first_name=firstname,
             last_name=lastname,
@@ -137,6 +139,7 @@ class userSignupView(ModelViewSet):
             password=password,
             reporting_manager=reporting_to
         )
+            send_user_welcome_email(u_user, password)
             return Response({'message':'user created successfully'},status=201)
         return Response({'error': 'User with this email already exists'}, status=401)
         

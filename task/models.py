@@ -32,7 +32,7 @@ class Task(models.Model):
         related_name='subtasks',
         blank=True, null=True
     )
-    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='created_tasks')
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, related_name='created_tasks',null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

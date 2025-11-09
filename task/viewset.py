@@ -17,6 +17,8 @@ from .serializers import TaskSerializer,CommentSerializer,AttachmentSerializer,T
     TaskActivityLogSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from users.email import send_task_assigned_email,send_task_completed_email,send_task_reopen_request_email,\
+    send_reopen_request_status_email
 
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all().select_related('created_by', 'assigned_to').prefetch_related('comments', 'attachments')
@@ -29,6 +31,8 @@ class TaskViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         status = self.request.query_params.get('status')
         assigned_to = self.request.query_params.get('assigned_to')
+        perm = self.request.query_params.get('perm')
+        created_by = self.request.query_params.get('created_by')
         # user = self.request.query_params.get('user')
         # if user:
         #     queryset = queryset.filter(user=user)
@@ -36,6 +40,18 @@ class TaskViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status)
         if assigned_to:
             queryset = queryset.filter(assigned_to_id=assigned_to)
+        if created_by:
+            queryset = queryset.filter(created_by_id=created_by)
+        if perm:
+            queryset = super().get_queryset()
+            if self.request.user.is_task_create:
+                queryset = queryset.filter(created_by=self.request.user.id)
+            elif self.request.user.is_task_recive:
+                queryset = queryset.filter(assigned_to=self.request.user.id)
+            else:
+                pass
+        
+
         return queryset
 
     # def get_queryset(self):
@@ -49,6 +65,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         task=serializer.save(created_by=user)
+        send_task_assigned_email(task)
         log_task_activity(task, self.request.user, 'created', f"Task '{task.title}' created.")
 
     @action(detail=False, methods=['get'], url_path='dashboard')
@@ -75,7 +92,8 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         old_task = self.get_object()
         new_task = serializer.save()
-
+        if new_task.status=='completed':
+            send_task_completed_email(new_task)
         # Detect changes
         changes = []
         if old_task.status != new_task.status:
@@ -151,7 +169,8 @@ class TaskViewSet(viewsets.ModelViewSet):
         elif request.method == 'POST':
             serializer = TaskReopenRequestSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
-                serializer.save(user=request.user, task=task)
+                obj=serializer.save(user=request.user, task=task)
+                send_task_reopen_request_email(obj)
                 log_message=f'{self.request.user.first_name} {self.request.user.last_name} request to reopen task'
                 log_task_activity(task, self.request.user, 'reopen', log_message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -183,7 +202,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
                 log_message = f"Task '{task.title}' reopened and moved to {task.status}"
                 log_task_activity(task, request.user, 'task_status_update', log_message)
-
+            send_reopen_request_status_email(reopen_request)
             serializer = TaskReopenRequestSerializer(reopen_request)
             return Response(serializer.data, status=status.HTTP_200_OK)
 

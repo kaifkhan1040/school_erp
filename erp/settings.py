@@ -66,7 +66,7 @@ ROOT_URLCONF = 'erp.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -127,6 +127,12 @@ USE_I18N = True
 
 USE_TZ = True
 
+EMAIL_USE_TLS = True
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST_PASSWORD = 'yqmm vxvf nqsm vkpz'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'kaifkhan1040@gmail.com'
+EMAIL_PORT = 587
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

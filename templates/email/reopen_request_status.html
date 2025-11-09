@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <body style="font-family: Arial, sans-serif; background: #f8f9fa; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 24px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      {% if status == "accepted" %}
+        <h2 style="color: #198754;">✅ Reopen Request Accepted</h2>
+      {% else %}
+        <h2 style="color: #dc3545;">❌ Reopen Request Rejected</h2>
+      {% endif %}
+
+      <p>Hello <strong>{{ user.first_name }}</strong>,</p>
+
+      <p>
+        Your request to reopen the task "<strong>{{ task.title }}</strong>" has been
+        <strong>{{ status|title }}</strong> by <strong>{{ admin_name }}</strong> in <strong>{{ company_name }}</strong>.
+      </p>
+
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+          <td style="padding: 6px 0; width: 130px;"><b>Task Title:</b></td>
+          <td>{{ task.title }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0;"><b>Priority:</b></td>
+          <td>{{ task.priority|title }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0;"><b>Current Status:</b></td>
+          <td>{{ task.status|title }}</td>
+        </tr>
+      </table>
+
+      <p>
+        You can review the updated task here:<br>
+        <a href="{{ login_url }}" style="color: #0d6efd; text-decoration: none;">{{ login_url }}</a>
+      </p>
+
+      <hr style="margin: 20px 0;">
+      <p style="font-size: 12px; color: #777;">This is an automated message from {{ company_name }}.</p>
+    </div>
+  </body>
+</html>

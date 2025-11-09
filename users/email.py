@@ -77,6 +77,109 @@ def send_from_template(to, subject, template, context, **kwargs):
     send(to, subject, html_body, **kwargs)
     return print('send') 
 
+def send_user_welcome_email(user, raw_password=None):
+    mail_list,email_subject = [user.email],"Welcome to little star public school erp"
+    email_template = "email/welcome.html"
+    context = {
+        'user': user,
+        'password': raw_password,
+        'company_name': 'Little star public school',
+        'login_url': 'https://lsps-jet.vercel.app/login',
+    }
+    Thread(
+        target=send_from_template,
+        args=(mail_list, email_subject, email_template, context),
+    ).start()
+
+def send_task_assigned_email(task):
+    if not task.assigned_to or not task.assigned_to.email:
+        return
+    mail_list,email_subject = [task.assigned_to.email],f"New Task Assigned: {task.title}"
+    email_template = "email/task_assigned.html"
+    context = {
+        'user': task.assigned_to,
+        'task': task,
+        'company_name': 'Little star public school',
+        'login_url': 'https://lsps-jet.vercel.app/login',
+    }
+    Thread(
+        target=send_from_template,
+        args=(mail_list, email_subject, email_template, context),
+    ).start()
+
+
+def send_task_completed_email(task):
+    """
+    Send an email notification when a task is marked as completed by a user.
+    """
+    # Ensure there’s a creator to notify
+    if not task.created_by or not task.created_by.email:
+        return
+    mail_list,email_subject = [task.created_by.email],f"Task Completed: {task.title}"
+    email_template = "email/task_completed.html"
+    context = {
+        "task": task,
+        "completed_by": task.assigned_to,
+        'company_name': 'Little star public school',
+        'login_url': 'https://lsps-jet.vercel.app/login',
+    }
+    Thread(
+        target=send_from_template,
+        args=(mail_list, email_subject, email_template, context),
+    ).start()
+
+def send_task_reopen_request_email(task_reopen_request):
+    """
+    Send an email notification when a user requests to reopen a completed task.
+    """
+    task = task_reopen_request.task
+    user = task_reopen_request.user
+
+    # Ensure there’s a creator or manager to notify
+    if not task.created_by or not task.created_by.email:
+        return
+
+    email_subject = f"Reopen Request for Task: {task.title}"
+    mail_list= [task.created_by.email]
+    email_template = "email/task_reopen_request.html"
+    context = {
+        "task": task,
+        "requested_by": user,
+        "message": task_reopen_request.message,
+        'company_name': 'Little star public school',
+        'login_url': 'https://lsps-jet.vercel.app/login',
+    }
+    Thread(
+        target=send_from_template,
+        args=(mail_list, email_subject, email_template, context),
+    ).start()
+
+def send_reopen_request_status_email(task_reopen_request):
+    """
+    Send an email notification to the requester when their reopen request
+    is accepted or rejected by the superadmin/manager.
+    """
+    task = task_reopen_request.task
+    user = task_reopen_request.user
+    status = task_reopen_request.status
+
+    if not user.email:
+        return
+
+    mail_list, email_subject = [user.email],f"Your Task Reopen Request has been {status.title()}"
+    context = {
+        "task": task,
+        "user": user,
+        "status": status,
+        "company_name": "Aquince ERP",
+       'company_name': 'Little star public school',
+        'login_url': 'https://lsps-jet.vercel.app/login',
+    }
+    email_template="email/reopen_request_status.html"
+    Thread(
+        target=send_from_template,
+        args=(mail_list, email_subject, email_template, context),
+    ).start()
 
 
 def verification_mail(token,email):

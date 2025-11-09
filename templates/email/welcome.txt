@@ -1,0 +1,12 @@
+Hello {{ user.first_name }},
+
+Welcome to Little star public school!
+
+Your account has been created successfully.
+Login Email: {{ user.email }}
+Password: {{ password }}
+
+You can now log in and start using your dashboard.
+
+Best regards,  
+The {{ company_name }} Team

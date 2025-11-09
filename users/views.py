@@ -45,5 +45,5 @@ def loginPage(request):
     return render(request, 'registration/login.html', {'user': request.user})
 
 def starter_view(request):
-    return render(request, 'home.html', {'user': request.user})
+    return render(request, 'email/task_assigned.html', {'user': request.user})
 
