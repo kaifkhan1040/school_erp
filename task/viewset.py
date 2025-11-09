@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from .utils import log_task_activity
 from rest_framework import viewsets, permissions
-from .models import Task,TaskComment,Attachment
+from .models import Task,TaskComment,Attachment,TaskReopenRequest
 from .serializers import TaskSerializer,CommentSerializer,AttachmentSerializer,TaskReopenRequestSerializer,\
     TaskActivityLogSerializer
 from rest_framework.response import Response
@@ -29,6 +29,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         status = self.request.query_params.get('status')
         assigned_to = self.request.query_params.get('assigned_to')
+        # user = self.request.query_params.get('user')
+        # if user:
+        #     queryset = queryset.filter(user=user)
         if status:
             queryset = queryset.filter(status=status)
         if assigned_to:
@@ -48,6 +51,27 @@ class TaskViewSet(viewsets.ModelViewSet):
         task=serializer.save(created_by=user)
         log_task_activity(task, self.request.user, 'created', f"Task '{task.title}' created.")
 
+    @action(detail=False, methods=['get'], url_path='dashboard')
+    def dashboard(self, request):
+        user = request.user
+        self_tasks=''
+        # --- Self Stats ---
+        if user.is_superuser:
+            self_tasks = Task.objects.all()
+        else:
+            self_tasks = Task.objects.filter(assigned_to=user)
+        self_stats = {
+            "total": self_tasks.count(),
+            "pending": self_tasks.filter(status='pending').count(),
+            "in_progress": self_tasks.filter(status='in_progress').count(),
+            "completed": self_tasks.filter(status='completed').count(),
+        }
+        data = {
+            "self": self_stats
+        }
+
+        return Response(data)
+
     def perform_update(self, serializer):
         old_task = self.get_object()
         new_task = serializer.save()
@@ -55,7 +79,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         # Detect changes
         changes = []
         if old_task.status != new_task.status:
-            changes.append(f"Status changed from '{old_task.status}' to '{new_task.status}'.")
+            changes.append(f"{self.request.user.first_name} {self.request.user.last_name} change the status from '{old_task.status}' to '{new_task.status}'.")
             log_task_activity(new_task, self.request.user, 'status_changed', changes[-1])
 
         if old_task.assigned_to != new_task.assigned_to:
@@ -63,6 +87,10 @@ class TaskViewSet(viewsets.ModelViewSet):
             new_name = new_task.assigned_to.get_full_name() if new_task.assigned_to else 'None'
             changes.append(f"Assigned changed from '{old_name}' to '{new_name}'.")
             log_task_activity(new_task, self.request.user, 'assigned', changes[-1])
+
+        if old_task.priority != new_task.priority:
+            changes.append(f"{self.request.user.first_name} {self.request.user.last_name} changed Priority from '{old_task.priority}' to '{new_task.priority}'.")
+            log_task_activity(new_task, self.request.user, 'priority', changes[-1])
 
         if not changes:
             log_task_activity(new_task, self.request.user, 'updated', f"Task '{new_task.title}' updated.")
@@ -80,6 +108,8 @@ class TaskViewSet(viewsets.ModelViewSet):
             serializer = CommentSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 serializer.save(user=request.user, task=task)
+                log_message=f'{self.request.user.first_name} {self.request.user.last_name} makes a comment'
+                log_task_activity(task, self.request.user, 'priority', log_message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -104,10 +134,12 @@ class TaskViewSet(viewsets.ModelViewSet):
             serializer = AttachmentSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 serializer.save(uploaded_by=request.user, task=task)
+                log_message=f'{self.request.user.first_name} {self.request.user.last_name} Upload a Attachment'
+                log_task_activity(task, self.request.user, 'priority', log_message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-    @action(detail=True, methods=['get', 'post'], url_path='reopen')
+    @action(detail=True, methods=['get', 'post','patch'], url_path='reopen')
     def reopen(self, request, pk=None):
         task = self.get_object()
 
@@ -120,8 +152,40 @@ class TaskViewSet(viewsets.ModelViewSet):
             serializer = TaskReopenRequestSerializer(data=request.data, context={'request': request})
             if serializer.is_valid():
                 serializer.save(user=request.user, task=task)
+                log_message=f'{self.request.user.first_name} {self.request.user.last_name} request to reopen task'
+                log_task_activity(task, self.request.user, 'reopen', log_message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == 'PATCH':
+            reopen_id = request.data.get('id')
+            new_status = request.data.get('status')
+
+            if not reopen_id or not new_status:
+                return Response(
+                    {"error": "Both 'id' and 'status' are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                reopen_request = task.reopen.get(id=reopen_id)
+            except TaskReopenRequest.DoesNotExist:
+                return Response({"error": "Reopen request not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            reopen_request.status = new_status
+            reopen_request.save()
+            log_message = f"{request.user.first_name} {request.user.last_name} changed reopen request status to {new_status}"
+            log_task_activity(task, request.user, 'reopen_status', log_message)
+
+            if new_status == 'accepted':
+                task.status = 'in_progress'  # or 'pending', depending on your logic
+                task.save()
+
+                log_message = f"Task '{task.title}' reopened and moved to {task.status}"
+                log_task_activity(task, request.user, 'task_status_update', log_message)
+
+            serializer = TaskReopenRequestSerializer(reopen_request)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = TaskComment.objects.all().select_related('task', 'user').prefetch_related('attachments')

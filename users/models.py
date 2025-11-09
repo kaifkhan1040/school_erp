@@ -39,6 +39,9 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=500,null=True,blank=True)
     dob = models.DateField(null=True,blank=True)
     doj = models.DateField(null=True,blank=True)
+    is_report = models.BooleanField(default=False)
+    is_task_recive = models.BooleanField(default=False)
+    is_task_create = models.BooleanField(default=False)
     reporting_manager = models.ForeignKey(
         'self',                      # refers to same model
         on_delete=models.SET_NULL,   # keep user if manager deleted

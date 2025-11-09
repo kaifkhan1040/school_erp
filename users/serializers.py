@@ -42,7 +42,7 @@ class UserSerializer(ModelSerializer):
         model = CustomUser
         fields = (
             'id', 'email', 'first_name',  'last_name', 'is_staff', 'is_active', 
-            'is_superuser','role','designation','reporting_manager', 'team'
+            'is_superuser','role','designation','reporting_manager', 'team','is_report','is_task_recive','is_task_create'
         )
         # depth=1
         extra_kwargs = {'password': {'write_only': True}, 
