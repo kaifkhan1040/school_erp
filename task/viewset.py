@@ -112,7 +112,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                 log_task_activity(task, self.request.user, 'priority', log_message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
     @action(detail=True, methods=['get'], url_path='logs')
     def logs(self, request, pk=None):
         task = self.get_object()
@@ -120,7 +120,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             comments = task.activity_logs.all()
             serializer = TaskActivityLogSerializer(comments, many=True)
             return Response(serializer.data)
-        
+
     @action(detail=True, methods=['get', 'post'], url_path='attachments')
     def attachments(self, request, pk=None):
         task = self.get_object()
@@ -138,7 +138,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                 log_task_activity(task, self.request.user, 'priority', log_message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
     @action(detail=True, methods=['get', 'post','patch'], url_path='reopen')
     def reopen(self, request, pk=None):
         task = self.get_object()
@@ -156,7 +156,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                 log_task_activity(task, self.request.user, 'reopen', log_message)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         elif request.method == 'PATCH':
             reopen_id = request.data.get('id')
             new_status = request.data.get('status')
