@@ -11,11 +11,21 @@ class RecursiveUserSerializer(serializers.ModelSerializer):
     subordinates = serializers.SerializerMethodField()
 
     def get_subordinates(self, obj):
-        # Recursive call
+        # Prevent infinite recursion by limiting depth
+        depth = self.context.get('depth', 0)
+        if depth >= 3:  # Stop after 3 levels
+            return []
+        
         subordinates = obj.subordinates.all()
         if not subordinates:
             return []
-        return RecursiveUserSerializer(subordinates, many=True).data 
+
+        serializer = RecursiveUserSerializer(
+            subordinates,
+            many=True,
+            context={'depth': depth + 1}  # increment recursion depth
+        )
+        return serializer.data
     
 class UserSerializer(ModelSerializer):
     """
@@ -47,9 +57,17 @@ class UserSerializer(ModelSerializer):
         # depth=1
         extra_kwargs = {'password': {'write_only': True}, 
                         'last_login': {'read_only': True}, 'is_superuser': {'read_only': True}}
+    # def get_team(self, obj):
+    #     """Fetch full recursive team tree."""
+    #     return RecursiveUserSerializer(obj.subordinates.all(), many=True).data
+    
     def get_team(self, obj):
-        """Fetch full recursive team tree."""
-        return RecursiveUserSerializer(obj.subordinates.all(), many=True).data
+        """Fetch recursive team structure with safe depth control."""
+        return RecursiveUserSerializer(
+            obj.subordinates.all(),
+            many=True,
+            context={'depth': 0}  # start recursion from depth 0
+        ).data
         
     def to_representation(self, instance):
         """
