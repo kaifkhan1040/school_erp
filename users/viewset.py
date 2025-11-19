@@ -38,7 +38,7 @@ class userSignupView(ModelViewSet):
     queryset = get_user_model().objects.all()
     permission_classes = ('')
     serializer_class = UserSerializer
-    parser_classes = (MultiPartParser, FormParser)
+    # parser_classes = (MultiPartParser, FormParser)
 
     @action(methods=['GET'], detail=False)
     def config(self, request):
