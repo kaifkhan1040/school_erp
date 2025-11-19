@@ -1,7 +1,7 @@
 from .models import CustomUser,Designation
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
-
+from rest_framework.fields import ImageField
 
 class RecursiveUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,7 +13,7 @@ class RecursiveUserSerializer(serializers.ModelSerializer):
     def get_subordinates(self, obj):
         # Prevent infinite recursion by limiting depth
         depth = self.context.get('depth', 0)
-        if depth >= 3:  # Stop after 3 levels
+        if depth >= 4:  # Stop after 3 levels
             return []
         
         subordinates = obj.subordinates.all()
@@ -41,18 +41,21 @@ class UserSerializer(ModelSerializer):
         required=False,
         allow_null=True
     )
-
+    image = serializers.ImageField(required=False, allow_null=True)  
     reporting_manager = serializers.PrimaryKeyRelatedField(
         queryset=CustomUser.objects.all(),
         required=False,
         allow_null=True
     )
+    total_tasks = serializers.SerializerMethodField()
+    completed_tasks = serializers.SerializerMethodField()
     team = serializers.SerializerMethodField()
     class Meta:
         model = CustomUser
         fields = (
             'id', 'email', 'first_name',  'last_name', 'is_staff', 'is_active', 
-            'is_superuser','role','designation','reporting_manager', 'team','is_report','is_task_recive','is_task_create'
+            'is_superuser','role','designation','reporting_manager', 'team','is_report','is_task_recive','is_task_create',
+            'total_tasks', 'completed_tasks',"image"
         )
         # depth=1
         extra_kwargs = {'password': {'write_only': True}, 
@@ -69,6 +72,12 @@ class UserSerializer(ModelSerializer):
             context={'depth': 0}  # start recursion from depth 0
         ).data
         
+    def get_total_tasks(self, obj):
+        return obj.assigned_tasks.count()
+
+    def get_completed_tasks(self, obj):
+        return obj.assigned_tasks.filter(status='completed').count()
+
     def to_representation(self, instance):
         """
         Customize the output (read) — show full designation details.

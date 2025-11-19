@@ -18,6 +18,8 @@ from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from .email import send_user_welcome_email
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 def now_local(only_date=False):
     """
@@ -36,6 +38,7 @@ class userSignupView(ModelViewSet):
     queryset = get_user_model().objects.all()
     permission_classes = ('')
     serializer_class = UserSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
     @action(methods=['GET'], detail=False)
     def config(self, request):
@@ -112,7 +115,7 @@ class userSignupView(ModelViewSet):
         content = {'success': 'User Deactivted successfully.'}
         return response.Ok(content)
     
-    @action(methods=['POST'], detail=False)
+    @action(methods=['POST'], detail=False,parser_classes=[MultiPartParser, FormParser])
     def createuser(self, request):
         email =request.data.get('email')
         firstname = request.data.get('firstname')
@@ -120,6 +123,7 @@ class userSignupView(ModelViewSet):
         designation = request.data.get('designation')
         role = request.data.get('role')
         password = request.data.get('password')
+        image = request.FILES.get('image')  
         reporting_to = request.data.get('reporting_manager')
         des_obj=Designation.objects.filter(id=designation).first()
         reporting_to=CustomUser.objects.filter(id=reporting_to).first() 
@@ -137,6 +141,7 @@ class userSignupView(ModelViewSet):
             designation=des_obj,
             role=role,
             password=password,
+            image=image,
             reporting_manager=reporting_to
         )
             send_user_welcome_email(u_user, password)
