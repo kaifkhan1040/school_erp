@@ -123,6 +123,9 @@ class userSignupView(ModelViewSet):
         designation = request.data.get('designation')
         role = request.data.get('role')
         password = request.data.get('password')
+        is_report = request.data.get('is_report')
+        is_task_recive = request.data.get('is_task_recive')
+        is_task_create = request.data.get('is_task_create')
         image = request.FILES.get('image')  
         reporting_to = request.data.get('reporting_manager')
         des_obj=Designation.objects.filter(id=designation).first()
@@ -142,7 +145,10 @@ class userSignupView(ModelViewSet):
             role=role,
             password=password,
             image=image,
-            reporting_manager=reporting_to
+            reporting_manager=reporting_to,
+            is_report=is_report,
+            is_task_recive=is_task_recive,
+            is_task_create=is_task_create
         )
             send_user_welcome_email(u_user, password)
             return Response({'message':'user created successfully'},status=201)
