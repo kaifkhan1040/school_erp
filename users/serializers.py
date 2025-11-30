@@ -6,7 +6,7 @@ from rest_framework.fields import ImageField
 class RecursiveUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'designation', 'subordinates')
+        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'designation', 'subordinates','is_task_recive')
 
     subordinates = serializers.SerializerMethodField()
 
