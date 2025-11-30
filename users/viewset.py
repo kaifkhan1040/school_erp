@@ -127,6 +127,12 @@ class userSignupView(ModelViewSet):
         is_task_recive = request.data.get('is_task_recive',False)
         is_task_create = request.data.get('is_task_create',False)
         image = request.FILES.get('image')  
+        if is_report=="true":
+            is_report=True
+        if is_task_recive=="true":
+            is_task_recive=True
+        if is_task_create=="true":
+            is_task_create=True
         reporting_to = request.data.get('reporting_manager')
         des_obj=Designation.objects.filter(id=designation).first()
         reporting_to=CustomUser.objects.filter(id=reporting_to).first() 
