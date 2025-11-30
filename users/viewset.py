@@ -36,6 +36,7 @@ def now_local(only_date=False):
 class userSignupView(ModelViewSet):
     permission_classes = [IsAuthenticated]
     queryset = get_user_model().objects.all()
+    permission_classes = ('')
     serializer_class = UserSerializer
     # parser_classes = (MultiPartParser, FormParser)
 
