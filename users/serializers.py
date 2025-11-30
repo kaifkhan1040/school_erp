@@ -98,6 +98,12 @@ class UserSerializer(ModelSerializer):
         else:
             rep['reporting_manager'] = None
         return rep
+    
+    def update(self, instance, validated_data):
+    # Prevent is_active from becoming false automatically
+        if 'is_active' not in validated_data:
+            validated_data['is_active'] = instance.is_active
+        return super().update(instance, validated_data)
 
 class DesignationSerializer(ModelSerializer):
     class Meta:
