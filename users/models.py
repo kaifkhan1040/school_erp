@@ -60,17 +60,17 @@ class CustomUser(AbstractUser):
         self.image.storage.delete(self.image.name)
         super().delete()
         
-    def save(self, *args, **kwargs):
-        """ Delete old image when a new one is uploaded """
-        try:
-            old_user = CustomUser.objects.get(id=self.id)
-            if old_user.image and self.image and old_user.image != self.image:
-                if os.path.isfile(old_user.image.path):
-                    os.remove(old_user.image.path)
-        except CustomUser.DoesNotExist:
-            pass  
+    # def save(self, *args, **kwargs):
+    #     """ Delete old image when a new one is uploaded """
+    #     try:
+    #         old_user = CustomUser.objects.get(id=self.id)
+    #         if old_user.image and self.image and old_user.image != self.image:
+    #             if os.path.isfile(old_user.image.path):
+    #                 os.remove(old_user.image.path)
+    #     except CustomUser.DoesNotExist:
+    #         pass  
 
-        super().save(*args, **kwargs)
+    #     super().save(*args, **kwargs)
 
 
 class ForgetPassMailVerify(models.Model):
