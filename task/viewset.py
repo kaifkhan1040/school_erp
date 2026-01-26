@@ -64,11 +64,36 @@ class TaskViewSet(viewsets.ModelViewSet):
     #     # Normal user → can see only their tasks
     #     return Task.objects.filter(assigned_to=user)
 
-    def perform_create(self, serializer):
-        user = self.request.user
-        task=serializer.save(created_by=user)
-        send_task_assigned_email(task)
-        log_task_activity(task, self.request.user, 'created', f"Task '{task.title}' created.")
+    # def perform_create(self,request, serializer):
+        # user = self.request.user
+        # task=serializer.save(created_by=user)
+        # send_task_assigned_email(task)
+        # log_task_activity(task, self.request.user, 'created', f"Task '{task.title}' created.")
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        tasks = serializer.save()
+
+        for task in tasks:
+            send_task_assigned_email(task)
+            log_task_activity(
+                task,
+                request.user,
+                'created',
+                f"Task '{task.title}' created."
+            )
+
+        return Response(
+            {
+                "message": "Tasks created successfully",
+                "task_ids": [task.id for task in tasks]
+            },
+            status=status.HTTP_201_CREATED
+        )
 
     @action(detail=False, methods=['get'], url_path='dashboard')
     def dashboard(self, request):

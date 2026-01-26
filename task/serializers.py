@@ -89,15 +89,54 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 
-
+from users.models import CustomUser
 
 class TaskSerializer(serializers.ModelSerializer):
+    assigned_to = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
+    assigned_users = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(
+            queryset=CustomUser.objects.all()
+        ),
+        write_only=True,
+        required=False
+    )
+
     class Meta:
         model = Task
         fields = '__all__'
         read_only_fields = ['created_by', 'created_at', 'updated_at']
 
+    def create(self, validated_data):
+        assigned_users = validated_data.pop('assigned_users', [])
+        request = self.context['request']
+        user = request.user
 
+        tasks = []
+
+        # If multiple users sent
+        if assigned_users:
+            for assigned_user in assigned_users:
+                task = Task.objects.create(
+                    **validated_data,
+                    assigned_to=assigned_user,
+                    created_by=user
+                )
+                tasks.append(task)
+        else:
+            # fallback: single user
+            task = Task.objects.create(
+                **validated_data,
+                created_by=user
+            )
+            tasks.append(task)
+
+        return tasks
+    
     def update(self, instance, validated_data):
         user = self.context['request'].user
         new_status = validated_data.get('status', instance.status)
